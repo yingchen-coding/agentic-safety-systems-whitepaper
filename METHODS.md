@@ -1,268 +1,199 @@
-# Methods: Portfolio-to-Methodology Mapping
+# Methods Overview
+
+Our methodology operationalizes safety as a continuous lifecycle spanning research, evaluation, deployment, release gating, and incident response. Each stage is implemented as a concrete, reusable system component.
+
+---
 
 ## Overview
 
-This document maps the 8 repository artifacts to the methodological framework presented in the whitepaper. Each repository implements a specific component of the closed-loop safety system.
+We structure safety evaluation as a closed-loop pipeline:
+
+**Failure Understanding → Detection Benchmarks → Safeguard Design → Red-Teaming → Production Evaluation → Release Gating → Incident Feedback → Research Communication**
+
+Each stage maps to a dedicated system component.
 
 ---
 
-## System Architecture
+## 1. Failure Understanding
+
+**Repo:** `when-rlhf-fails-quietly`
+
+**Method:**
+We construct a failure taxonomy of silent alignment breakdowns (e.g., intent drift, reward hacking, epistemic degradation) and empirically validate these across multiple frontier and open-weight models.
+
+**Output:**
+- Failure taxonomy
+- Empirical evidence of silent failures
+- Intervention points for RLHF and policy training
+
+**Role in method:**
+Defines *what to measure* and *why single-turn evals fail*.
+
+---
+
+## 2. Detection Benchmarks
+
+**Repo:** `agentic-misuse-benchmark`
+
+**Method:**
+We evaluate misuse detectors on multi-turn trajectories, measuring delayed failure and false negative rates under coordinated, adaptive misuse scenarios.
+
+**Output:**
+- Trajectory-level benchmark
+- Detector comparisons
+- Erosion curves
+
+**Role in method:**
+Defines *how detection fails over trajectories*.
+
+---
+
+## 3. Safeguard Design
+
+**Repo:** `agentic-safeguards-simulator`
+
+**Method:**
+We instrument a minimal agent architecture with pre-action, post-action, and trajectory-level safeguard hooks, and evaluate intervention strategies (block, warn, escalate, human-in-the-loop).
+
+**Output:**
+- Safeguard placement tradeoffs
+- Escalation policies
+- FP recovery strategies
+
+**Role in method:**
+Explores *where safeguards should live in the agent loop*.
+
+---
+
+## 4. Automated Red-Teaming
+
+**Repo:** `safeguards-stress-tests`
+
+**Method:**
+We implement multi-turn adversarial templates and mutation strategies to simulate adaptive attackers and measure delayed failure rates.
+
+**Output:**
+- Attack coverage
+- Failure distributions
+- Delayed violation curves
+
+**Role in method:**
+Provides *stress inputs* that surface silent regressions.
+
+---
+
+## 5. Production Evaluation Infrastructure
+
+**Repo:** `scalable-safeguards-eval-pipeline`
+
+**Method:**
+We design a batch + streaming evaluation system with drift detection, traffic replay, and cost-aware scheduling. Safety metrics are monitored continuously in production-like environments.
+
+**Output:**
+- Real-time safety telemetry
+- Drift alerts
+- Cost model for evaluation coverage
+
+**Role in method:**
+Makes safety evaluation *operationally sustainable*.
+
+---
+
+## 6. Release Gating
+
+**Repo:** `model-safety-regression-suite`
+
+**Method:**
+We compare baseline vs candidate models using multiple evaluation suites and enforce regression thresholds with statistical significance tests. Results produce binding OK / WARN / BLOCK verdicts.
+
+**Output:**
+- HTML regression reports
+- CI/CD exit codes
+- Root cause attribution
+
+**Role in method:**
+Turns safety signals into *release-blocking constraints*.
+
+---
+
+## 7. Incident → Regression Feedback Loop
+
+**Repo:** `agentic-safety-incident-lab`
+
+**Method:**
+We replay real incidents, attribute root causes, estimate blast radius, and auto-generate regression tests that integrate back into the regression suite.
+
+**Output:**
+- Executable postmortems
+- Permanent regression tests
+- Incident severity grading
+
+**Role in method:**
+Creates *institutional memory for safety failures*.
+
+---
+
+## 8. Research Communication
+
+**Repo:** `safety-memos`
+
+**Method:**
+We distill empirical findings into public-facing memos that articulate why existing evaluation practices underestimate agentic risk.
+
+**Output:**
+- External research memos
+- Threat models
+- Open questions
+
+**Role in method:**
+Bridges internal engineering insights to the research community.
+
+---
+
+## Pipeline Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          METHODOLOGY MAPPING                                 │
+│                         CLOSED-LOOP METHODOLOGY                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
-│  PROBLEM ANALYSIS        DETECTION           DEFENSE         ADVERSARIAL    │
-│  ┌───────────────┐      ┌─────────────┐    ┌───────────┐   ┌───────────┐   │
-│  │ when-rlhf-    │      │ agentic-    │    │ agentic-  │   │ safeguards│   │
-│  │ fails-quietly │      │ misuse-     │    │ safeguards│   │ -stress-  │   │
-│  │               │      │ benchmark   │    │ -simulator│   │ tests     │   │
-│  │ Failure modes │      │ Detection   │    │ Safeguard │   │ Attack    │   │
-│  │ + taxonomy    │      │ benchmarks  │    │ design    │   │ generation│   │
-│  └───────┬───────┘      └──────┬──────┘    └─────┬─────┘   └─────┬─────┘   │
-│          │                     │                  │               │         │
-│          └──────────┬──────────┴────────┬────────┴───────┬───────┘         │
-│                     │                   │                │                  │
-│                     ▼                   ▼                ▼                  │
-│          ┌─────────────────────────────────────────────────────────┐       │
-│          │              EVALUATION INFRASTRUCTURE                    │       │
-│          │              scalable-safeguards-eval-pipeline            │       │
-│          │                                                           │       │
-│          │  • Batch + streaming evaluation                           │       │
-│          │  • Cost-aware prioritization                              │       │
-│          │  • Drift detection                                        │       │
-│          └─────────────────────────┬───────────────────────────────┘       │
-│                                    │                                        │
-│                                    ▼                                        │
-│          ┌─────────────────────────────────────────────────────────┐       │
-│          │              RELEASE GATING                               │       │
-│          │              model-safety-regression-suite                │       │
-│          │                                                           │       │
-│          │  • Statistical regression detection                       │       │
-│          │  • OK / WARN / BLOCK verdicts                             │       │
-│          │  • Longitudinal trend tracking                            │       │
-│          └─────────────────────────┬───────────────────────────────┘       │
-│                                    │                                        │
-│                         ┌──────────┴──────────┐                            │
-│                         ▼                     ▼                            │
-│                    [DEPLOY]              [BLOCK]                           │
-│                         │                                                   │
-│                         ▼                                                   │
-│          ┌─────────────────────────────────────────────────────────┐       │
-│          │              INCIDENT RESPONSE                            │       │
-│          │              agentic-safety-incident-lab                  │       │
-│          │                                                           │       │
-│          │  • Incident triage + RCA                                  │       │
-│          │  • Regression test generation                             │       │
-│          │  • Blameless postmortem                                   │       │
-│          └─────────────────────────┬───────────────────────────────┘       │
-│                                    │                                        │
-│                    ┌───────────────┴───────────────┐                       │
-│                    ▼                               ▼                       │
-│             New scenarios                   New regression tests           │
-│             → benchmarks                    → release gate                 │
-│                                                                             │
-│          ┌─────────────────────────────────────────────────────────┐       │
-│          │              RESEARCH COMMUNICATION                       │       │
-│          │              safety-memos                                 │       │
-│          │                                                           │       │
-│          │  • Cross-team knowledge transfer                          │       │
-│          │  • Stakeholder communication                              │       │
-│          │  • Counter-argument documentation                         │       │
-│          └─────────────────────────────────────────────────────────┘       │
-│                                                                             │
+│  [1] UNDERSTAND     [2] DETECT      [3] DEFEND      [4] STRESS-TEST         │
+│  when-rlhf-fails    misuse-bench    safeguards-sim  stress-tests            │
+│        │                 │                │               │                  │
+│        └────────┬────────┴────────┬───────┴───────┬───────┘                  │
+│                 │                 │               │                          │
+│                 ▼                 ▼               ▼                          │
+│  ┌─────────────────────────────────────────────────────────────────┐        │
+│  │  [5] PRODUCTION EVALUATION                                       │        │
+│  │      scalable-safeguards-eval-pipeline                           │        │
+│  └─────────────────────────────────┬───────────────────────────────┘        │
+│                                    │                                         │
+│                                    ▼                                         │
+│  ┌─────────────────────────────────────────────────────────────────┐        │
+│  │  [6] RELEASE GATING                                              │        │
+│  │      model-safety-regression-suite                               │        │
+│  │      OK / WARN / BLOCK                                           │        │
+│  └─────────────────────────────────┬───────────────────────────────┘        │
+│                                    │                                         │
+│                         ┌──────────┴──────────┐                             │
+│                         ▼                     ▼                             │
+│                    [DEPLOY]              [BLOCK]                            │
+│                         │                                                    │
+│                         ▼                                                    │
+│  ┌─────────────────────────────────────────────────────────────────┐        │
+│  │  [7] INCIDENT RESPONSE                                           │        │
+│  │      agentic-safety-incident-lab                                 │        │
+│  └─────────────────────────────────┬───────────────────────────────┘        │
+│                                    │                                         │
+│                    ┌───────────────┴───────────────┐                        │
+│                    ▼                               ▼                        │
+│             New scenarios                   New regression tests            │
+│             → [2] benchmarks                → [6] release gate              │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────┐        │
+│  │  [8] RESEARCH COMMUNICATION                                      │        │
+│  │      safety-memos                                                │        │
+│  └─────────────────────────────────────────────────────────────────┘        │
+│                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
-
----
-
-## Repository → Methodology Mapping
-
-### 1. when-rlhf-fails-quietly
-
-**Whitepaper Section:** Introduction, RLHF Limitations
-
-**Methodology:**
-- Empirical analysis of RLHF failure modes in multi-turn contexts
-- Documentation of policy erosion patterns
-- Credit assignment failure analysis
-
-**Key Artifacts:**
-- Failure taxonomy with RLHF intervention points
-- Erosion curve templates
-- Reproducibility documentation
-
----
-
-### 2. agentic-misuse-benchmark
-
-**Whitepaper Section:** Detection Benchmarks and Trajectory-Level Metrics
-
-**Methodology:**
-- Trajectory-level detection benchmark design
-- Intent drift measurement
-- Coverage gap analysis
-
-**Key Artifacts:**
-- Multi-turn scenario corpus
-- Trajectory-level scoring rubrics
-- Threat model documentation
-
----
-
-### 3. agentic-safeguards-simulator
-
-**Whitepaper Section:** Safeguards in the Loop
-
-**Methodology:**
-- Safeguard placement analysis (pre/mid/post-action hooks)
-- Escalation policy simulation
-- Human-in-the-loop recovery modeling
-
-**Key Artifacts:**
-- Agent loop architecture diagrams
-- Escalation decision trees
-- Latency/accuracy tradeoff analysis
-
----
-
-### 4. safeguards-stress-tests
-
-**Whitepaper Section:** Red-Teaming Is Necessary but Insufficient
-
-**Methodology:**
-- Adaptive attack generation
-- Erosion curve measurement
-- Coverage vs depth analysis
-
-**Key Artifacts:**
-- Attack mutation strategies
-- Stopping criteria documentation
-- Attack realism assessment
-
----
-
-### 5. scalable-safeguards-eval-pipeline
-
-**Whitepaper Section:** Production Reality
-
-**Methodology:**
-- Batch vs streaming evaluation architecture
-- Cost-aware safety coverage
-- Drift detection implementation
-
-**Key Artifacts:**
-- Cost model documentation
-- Backpressure handling
-- SLA definitions
-
----
-
-### 6. model-safety-regression-suite
-
-**Whitepaper Section:** Release Gating via Safety Regression Testing
-
-**Methodology:**
-- Statistical regression detection (bootstrap CI, permutation tests)
-- OK/WARN/BLOCK verdict logic
-- Longitudinal trend tracking
-
-**Key Artifacts:**
-- Statistical analysis module
-- Governance documentation
-- Change management process
-
----
-
-### 7. agentic-safety-incident-lab
-
-**Whitepaper Section:** Incident → Regression: Closing the Feedback Loop
-
-**Methodology:**
-- Incident triage and root cause analysis
-- Regression test generation from incidents
-- Blameless postmortem process
-
-**Key Artifacts:**
-- Severity rubric
-- Incident simulation generator
-- Learning velocity metrics
-
----
-
-### 8. safety-memos
-
-**Whitepaper Section:** Cross-cutting (Research Communication)
-
-**Methodology:**
-- Research communication to non-technical stakeholders
-- Counter-argument documentation
-- Limitation acknowledgment
-
-**Key Artifacts:**
-- Executive summary templates
-- Counter-argument register
-- Open questions tracker
-
----
-
-## Data Flow
-
-```
-                              ┌─────────────┐
-                              │ Production  │
-                              │ Traffic     │
-                              └──────┬──────┘
-                                     │
-                                     ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         eval-pipeline                                    │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                  │
-│  │ Sample      │───▶│ Evaluate    │───▶│ Score       │                  │
-│  │ traffic     │    │ trajectories│    │ + aggregate │                  │
-│  └─────────────┘    └─────────────┘    └──────┬──────┘                  │
-└──────────────────────────────────────────────┬──────────────────────────┘
-                                               │
-                                               ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                       regression-suite                                   │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                  │
-│  │ Compare to  │───▶│ Statistical │───▶│ Verdict     │                  │
-│  │ baseline    │    │ testing     │    │ OK/WARN/BLOCK│                  │
-│  └─────────────┘    └─────────────┘    └──────┬──────┘                  │
-└──────────────────────────────────────────────┬──────────────────────────┘
-                                               │
-                              ┌────────────────┴────────────────┐
-                              ▼                                 ▼
-                        [DEPLOY]                           [BLOCK]
-                              │                                 │
-                              ▼                                 │
-                     Production deployment                      │
-                              │                                 │
-                              ▼                                 │
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        incident-lab                                      │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                  │
-│  │ Incident    │───▶│ RCA +       │───▶│ Generate    │                  │
-│  │ detection   │    │ postmortem  │    │ regression  │                  │
-│  └─────────────┘    └─────────────┘    └──────┬──────┘                  │
-└──────────────────────────────────────────────┬──────────────────────────┘
-                                               │
-                              ┌────────────────┴────────────────┐
-                              ▼                                 ▼
-                    New scenarios                      New regression tests
-                    → misuse-benchmark                 → regression-suite
-```
-
----
-
-## Reproducibility
-
-Each repository includes:
-- Fixed random seeds for deterministic evaluation
-- Frozen model version specifications
-- Hardware/environment documentation
-- Step-by-step reproduction instructions
-
-See individual repository `docs/reproducibility.md` files for details.
