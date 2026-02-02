@@ -69,6 +69,24 @@ We propose a lifecycle-oriented safety framework that integrates trajectory-leve
 
 ---
 
+## 5-Minute End-to-End Demo
+
+See the full closed-loop system in action with [agentic-safety-demo](https://github.com/yingchen-coding/agentic-safety-demo):
+
+```bash
+git clone https://github.com/yingchen-coding/agentic-safety-demo
+cd agentic-safety-demo
+make demo
+```
+
+This demo walks through:
+1. **Stress Testing** → Discover delayed failures via adaptive red-teaming
+2. **Regression Generation** → Convert failures into permanent tests
+3. **Release Gate** → Gate a candidate model (OK/WARN/BLOCK)
+4. **Incident Replay** → Feed production incidents back into the system
+
+---
+
 ## Repository Structure
 
 ```
