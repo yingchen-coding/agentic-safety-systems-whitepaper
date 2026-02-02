@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silent Failures in Agentic Systems</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --text: #c9d1d9;
+            --accent: #58a6ff;
+            --muted: #8b949e;
+            --border: #30363d;
+            --card-bg: #161b22;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+
+        /* Hero */
+        .hero { text-align: center; padding: 4rem 0 3rem; }
+        .hero h1 { font-size: 2.5rem; margin-bottom: 1rem; color: #fff; }
+        .hero .subtitle { font-size: 1.25rem; color: var(--muted); margin-bottom: 2rem; }
+        .hero .tldr {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: left;
+            margin: 2rem 0;
+        }
+        .hero .tldr strong { color: var(--accent); }
+
+        /* Pipeline Diagram */
+        .pipeline {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            overflow-x: auto;
+        }
+        .pipeline pre {
+            font-family: 'SF Mono', Consolas, monospace;
+            font-size: 0.75rem;
+            color: var(--text);
+            white-space: pre;
+        }
+
+        /* Contributions */
+        .contributions { margin: 3rem 0; }
+        .contributions h2 { color: #fff; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+        .contrib-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
+        .contrib-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+        }
+        .contrib-card h3 { color: var(--accent); font-size: 1rem; margin-bottom: 0.5rem; }
+        .contrib-card p { color: var(--muted); font-size: 0.9rem; }
+
+        /* Comparison */
+        .comparison { margin: 3rem 0; }
+        .comparison h2 { color: #fff; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+        .comparison table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .comparison th, .comparison td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+        .comparison th { color: var(--accent); }
+        .comparison td:first-child { color: var(--muted); }
+
+        /* Links */
+        .links { margin: 3rem 0; }
+        .links h2 { color: #fff; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+        .link-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .link-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            text-decoration: none;
+            transition: border-color 0.2s;
+        }
+        .link-card:hover { border-color: var(--accent); }
+        .link-card h4 { color: var(--accent); font-size: 0.9rem; margin-bottom: 0.25rem; }
+        .link-card p { color: var(--muted); font-size: 0.8rem; }
+
+        /* Footer */
+        footer { text-align: center; padding: 2rem 0; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--border); margin-top: 3rem; }
+        footer a { color: var(--accent); text-decoration: none; }
+
+        /* Blockquote */
+        blockquote {
+            border-left: 3px solid var(--accent);
+            padding-left: 1rem;
+            margin: 1.5rem 0;
+            color: var(--muted);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Hero -->
+        <section class="hero">
+            <h1>Silent Failures in Agentic Systems</h1>
+            <p class="subtitle">Why Single-Turn Safety Evaluations Systematically Underestimate Risk</p>
+
+            <div class="tldr">
+                <p><strong>TL;DR:</strong> Safety failures in agentic AI are not single-turn jailbreaks—they are <em>silent regressions</em> that emerge over trajectories and erode across releases. This portfolio presents a closed-loop system that detects trajectory-level failures, gates releases on safety regressions, and converts incidents into permanent tests.</p>
+                <br>
+                <p>Where prior work asks <em>"Is this model aligned?"</em>, we ask:</p>
+                <blockquote><strong>"Does this system remain safe as it evolves, ships, and fails in the real world?"</strong></blockquote>
+            </div>
+        </section>
+
+        <!-- Pipeline Diagram -->
+        <section class="pipeline">
+<pre>
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        CLOSED-LOOP SAFETY SYSTEM                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   UNDERSTAND          DETECT           DEFEND          STRESS-TEST          │
+│   ┌─────────┐        ┌─────────┐      ┌─────────┐     ┌─────────┐          │
+│   │ when-   │        │ misuse  │      │ safegrd │     │ stress  │          │
+│   │ rlhf-   │───────▶│ bench-  │─────▶│ simul-  │────▶│ tests   │          │
+│   │ fails   │        │ mark    │      │ ator    │     │         │          │
+│   └─────────┘        └─────────┘      └─────────┘     └─────────┘          │
+│        │                  │                │               │                │
+│        ▼                  ▼                ▼               ▼                │
+│   ┌─────────────────────────────────────────────────────────────┐          │
+│   │                 SCALABLE EVAL PIPELINE                       │          │
+│   └─────────────────────────────────────────────────────────────┘          │
+│                                │                                            │
+│                                ▼                                            │
+│   ┌─────────────────────────────────────────────────────────────┐          │
+│   │              RELEASE GATE: OK / WARN / BLOCK                 │          │
+│   └─────────────────────────────────────────────────────────────┘          │
+│                                │                                            │
+│                    ┌───────────┴───────────┐                               │
+│                    ▼                       ▼                               │
+│              [DEPLOY]                 [BLOCK]                              │
+│                    │                                                        │
+│                    ▼                                                        │
+│   ┌─────────────────────────────────────────────────────────────┐          │
+│   │              INCIDENT LAB → REGRESSION TESTS                 │          │
+│   └─────────────────────────────────────────────────────────────┘          │
+│                                │                                            │
+│                    ┌───────────┴───────────┐                               │
+│                    ▼                       ▼                               │
+│             New scenarios          New regression tests                    │
+│             → benchmarks           → release gate                          │
+│                         FEEDBACK LOOP                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+</pre>
+        </section>
+
+        <!-- Key Contributions -->
+        <section class="contributions">
+            <h2>Key Contributions</h2>
+            <div class="contrib-grid">
+                <div class="contrib-card">
+                    <h3>1. Trajectory-Level Metrics</h3>
+                    <p>Delayed violation rate, erosion curves, and intent drift—metrics that surface failures invisible to single-turn detectors.</p>
+                </div>
+                <div class="contrib-card">
+                    <h3>2. Release Gating</h3>
+                    <p>Safety as a non-regression invariant enforced via CI/CD with statistical significance (OK / WARN / BLOCK).</p>
+                </div>
+                <div class="contrib-card">
+                    <h3>3. Incident → Regression</h3>
+                    <p>Production incidents become permanent regression tests—creating institutional memory that survives personnel turnover.</p>
+                </div>
+                <div class="contrib-card">
+                    <h3>4. Organizational Failure Modes</h3>
+                    <p>Metric gaming, alert fatigue, exception creep—governance mechanisms that prevent safeguard bypass.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Comparison -->
+        <section class="comparison">
+            <h2>How This Differs from Existing Work</h2>
+            <table>
+                <tr>
+                    <th>Dimension</th>
+                    <th>Anthropic / OpenAI / DeepMind</th>
+                    <th>This Work</th>
+                </tr>
+                <tr>
+                    <td>Evaluation granularity</td>
+                    <td>Single-turn / short-horizon</td>
+                    <td>Trajectory-level, multi-turn</td>
+                </tr>
+                <tr>
+                    <td>Safety framing</td>
+                    <td>Model property</td>
+                    <td>System-level non-regression invariant</td>
+                </tr>
+                <tr>
+                    <td>Red-teaming integration</td>
+                    <td>Episodic, advisory</td>
+                    <td>Continuous, release-gating</td>
+                </tr>
+                <tr>
+                    <td>Incident handling</td>
+                    <td>Postmortems</td>
+                    <td>Incident → replay → regression tests</td>
+                </tr>
+                <tr>
+                    <td>Organizational risk</td>
+                    <td>Implicit</td>
+                    <td>Explicit governance + anti-gaming</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- Links -->
+        <section class="links">
+            <h2>Portfolio</h2>
+            <div class="link-grid">
+                <a href="paper/whitepaper.md" class="link-card">
+                    <h4>Full Whitepaper</h4>
+                    <p>13-section research paper</p>
+                </a>
+                <a href="https://github.com/yingchen-coding/when-rlhf-fails-quietly" class="link-card">
+                    <h4>when-rlhf-fails-quietly</h4>
+                    <p>Failure taxonomy</p>
+                </a>
+                <a href="https://github.com/yingchen-coding/agentic-misuse-benchmark" class="link-card">
+                    <h4>agentic-misuse-benchmark</h4>
+                    <p>Detection benchmarks</p>
+                </a>
+                <a href="https://github.com/yingchen-coding/agentic-safeguards-simulator" class="link-card">
+                    <h4>agentic-safeguards-simulator</h4>
+                    <p>Safeguard design</p>
+                </a>
+                <a href="https://github.com/yingchen-coding/safeguards-stress-tests" class="link-card">
+                    <h4>safeguards-stress-tests</h4>
+                    <p>Red-teaming</p>
+                </a>
+                <a href="https://github.com/yingchen-coding/scalable-safeguards-eval-pipeline" class="link-card">
+                    <h4>scalable-safeguards-eval-pipeline</h4>
+                    <p>Production eval infra</p>
+                </a>
+                <a href="https://github.com/yingchen-coding/model-safety-regression-suite" class="link-card">
+                    <h4>model-safety-regression-suite</h4>
+                    <p>Release gating</p>
+                </a>
+                <a href="https://github.com/yingchen-coding/agentic-safety-incident-lab" class="link-card">
+                    <h4>agentic-safety-incident-lab</h4>
+                    <p>Incident → regression</p>
+                </a>
+                <a href="https://yingchen-coding.github.io/safety-memos/" class="link-card">
+                    <h4>safety-memos</h4>
+                    <p>Research communication</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <p>
+                <a href="paper/whitepaper.md">Whitepaper</a> ·
+                <a href="paper/CONTRIBUTIONS.md">Contributions</a> ·
+                <a href="paper/METHODS.md">Methods</a> ·
+                <a href="paper/COMPARISON.md">Comparison</a> ·
+                <a href="docs/INTERVIEW_NARRATIVE.md">Interview Guide</a>
+            </p>
+            <p style="margin-top: 1rem;">CC BY-NC 4.0 · <a href="https://github.com/yingchen-coding/agentic-safety-systems-whitepaper">View on GitHub</a></p>
+        </footer>
+    </div>
+</body>
+</html>
