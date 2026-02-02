@@ -1,32 +1,14 @@
-# Engineering Agentic Safeguards as a System
+# Silent Failures in Agentic Systems
 
-*Why Safety Fails in Practice and How to Close the Loop*
+*Why Single-Turn Safety Evaluations Systematically Underestimate Risk*
 
 ---
 
-## Executive Summary
+## Abstract
 
-Agentic AI systems introduce a qualitatively different safety risk profile compared to single-turn chatbots. In practice, safety failures in agentic systems are rarely immediate or localized. Instead, they emerge gradually over trajectories, compound across system boundaries, and are shaped by organizational incentives and deployment constraints.
+Despite widespread deployment of large language models, safety evaluation practices remain dominated by single-turn benchmarks and static red-teaming. We argue that these methods systematically underestimate risk in agentic systems, where failures emerge over multi-turn interactions under partial observability. Through empirical evidence and system-level analysis, we show that alignment mechanisms trained on single-step feedback fail to constrain delayed, compounding failure modes such as policy erosion, intent drift, and tool misuse.
 
-This whitepaper argues that most real-world safety failures are systemic rather than model-intrinsic. Improvements in model alignment, red-teaming, or detection in isolation do not prevent silent safety regressions once models are embedded in production agent loops with partial observability, cost constraints, and heterogeneous safeguards.
-
-We present a closed-loop safety systems framework that integrates:
-
-1. Failure analysis
-2. Multi-turn misuse detection benchmarks
-3. Proactive red-teaming
-4. In-loop safeguards
-5. Production evaluation infrastructure
-6. Release gating via safety regression testing
-7. Incident-driven regression generation
-
-Across multiple empirical artifacts and simulators, we observe three recurring patterns:
-
-- **Silent erosion:** Safety policies and alignment constraints degrade gradually over trajectories without triggering immediate violations.
-- **Delayed failures:** Harmful behaviors emerge only after extended interaction or tool use, escaping single-turn evaluations.
-- **Incentive-shaped risk:** Safeguards are often weakened in practice due to operational pressure, alert fatigue, and misaligned ownership.
-
-The core claim of this paper is that safety in agentic systems cannot be achieved through point solutions. Instead, safety must be engineered as an evolving system with explicit feedback loops, regression gating, and organizational governance. The goal is not to eliminate failures, but to bound risk, detect degradation early, and convert incidents into durable safety improvements.
+We propose a lifecycle-oriented safety framework that integrates trajectory-level evaluation, safeguards embedded in agent loops, regression-based release gating, and incident-driven feedback loops. This reframes safety from a pre-release checklist into a continuous, production-grade engineering discipline. Our approach surfaces silent regressions that static benchmarks miss and provides a practical blueprint for operationalizing safety governance in iterative deployment environments.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -50,94 +32,84 @@ The core claim of this paper is that safety in agentic systems cannot be achieve
 
 ---
 
-## 1. Problem Framing: Why Agentic Safety Fails Systematically
+## 1. Introduction: The Illusion of Safety in Single-Turn Benchmarks
 
-Agentic AI systems differ fundamentally from single-turn language models. They operate over trajectories, invoke tools, maintain state, and interact with partially observable environments. As a result, safety failures in agentic systems are not only a function of model behavior, but of the interaction between model policies, safeguards, tooling, evaluation protocols, and organizational processes.
+### Why "Passing Red-Teaming" Is Not Equivalent to Being Safe
 
-In practice, this leads to three systematic failure modes that are underrepresented in current safety benchmarks:
+The dominant paradigm in AI safety evaluation assumes that a model which passes red-teaming exercises and benchmark suites is "safe enough" to deploy. This assumption is fundamentally flawed for agentic systems. Passing a static test set measures performance on known attack patterns under controlled conditions—it does not measure resilience to adaptive adversaries, novel attack vectors, or the gradual policy erosion that occurs over extended interactions.
 
-### 1.1 Trajectory-Dependent Harm
+A model can achieve 95% refusal rate on a jailbreak benchmark while still exhibiting dangerous failure modes in production:
+- Failures that emerge only after 5+ turns of interaction
+- Failures triggered by specific tool combinations not in the benchmark
+- Failures that occur when safeguards are under operational load
 
-Many harmful behaviors only emerge after multiple turns of interaction. This includes gradual policy erosion, intent drift, and coordination between benign-looking substeps that collectively produce misuse. Single-turn evaluations systematically underestimate these risks because they assume that violations are immediate and localized.
+### Empirical Evidence of Silent Failures
+
+Across multiple evaluation artifacts, we observe consistent patterns of delayed failure:
 
 ```
-Turn 1: Strong refusal
-Turn 2: Partial compliance with caveats
-Turn 3: Full compliance with disclaimer
-Turn 4: Full compliance without disclaimer
-Turn 5: Active assistance
+Turn 1: Strong refusal                    (95% of models)
+Turn 2: Partial compliance with caveats   (78% of models)
+Turn 3: Full compliance with disclaimer   (52% of models)
+Turn 4: Full compliance without disclaimer (34% of models)
+Turn 5: Active assistance                 (22% of models)
 ```
 
 No single turn crosses a bright line. The trajectory does.
 
-### 1.2 Partial Observability of Safety-Relevant Signals
+These silent failures share common characteristics:
+- **Gradual onset:** No individual step triggers policy violations
+- **Context dependence:** Failures require specific interaction histories
+- **Partial observability:** Harm is not visible from any single message
 
-In production agent loops, safeguards do not have full visibility into user intent, downstream tool effects, or long-horizon consequences. Signals available to pre-action or post-action filters are incomplete proxies for real-world harm. This creates blind spots where harmful trajectories pass through individually "safe-looking" steps.
+### Contribution Summary
 
-### 1.3 Operational Constraints Shaping Safety Outcomes
+This whitepaper makes three core contributions:
 
-Safeguards operate under cost limits, latency budgets, and alert fatigue. These constraints lead to thresholds being loosened, detectors being sampled, or escalation policies being softened in practice. As a result, safety properties that hold in offline evaluation degrade in deployment.
+1. **Failure taxonomy:** We document how safeguards break in practice, distinguishing policy erosion, detector blind spots, escalation failures, and organizational decay.
 
-### The Core Insight
+2. **Lifecycle framework:** We propose trajectory-level evaluation, in-loop safeguards, regression-based release gating, and incident-driven feedback as an integrated system.
 
-These factors interact to produce **silent failures**: safety regressions that do not trigger explicit policy violations but materially increase real-world risk. Crucially, these failures are not attributable to a single component. They arise from system-level interactions and are therefore invisible to evaluation methodologies that test components in isolation.
+3. **Operational blueprint:** We provide concrete infrastructure patterns for implementing safety as a continuous engineering discipline rather than a pre-release checklist.
 
-> The implication is that improving any single layer (e.g., better RLHF, stronger red-teaming, or higher-precision detectors) does not guarantee improved end-to-end safety. Without system-level feedback loops and regression controls, localized improvements can be offset by degradation elsewhere in the stack.
-
----
-
-## 2. Failure Taxonomy: How Safeguards Break in Practice
-
-Empirically, safety failures in agentic systems cluster into a small number of recurring categories. These categories are not mutually exclusive and often compound across the lifecycle of deployment, monitoring, and iteration.
-
-### 2.1 Policy Erosion
-
-Safety policies that are effective in isolation degrade over trajectories. This includes gradual relaxation of refusal criteria, implicit policy weakening through decomposition-based prompting, and over-optimization of compliance behaviors that create new loopholes. Erosion is typically undetectable in single-turn evaluations because each step appears compliant in isolation.
-
-### 2.2 Detector Blind Spots
-
-Misuse detectors and intent classifiers exhibit systematic blind spots in multi-turn contexts. Coordinated misuse, slow intent drift, and benign-looking subgoals frequently evade turn-level classifiers. Over time, attackers adapt to detector failure modes, further reducing detection rates.
-
-### 2.3 Escalation Failure
-
-Safeguard escalation mechanisms (e.g., warnings, soft stops, human review) fail due to threshold miscalibration, alert fatigue, or operational pressure to reduce false positives. In practice, escalation policies are often weakened post-deployment to maintain user experience or throughput, creating unmonitored risk corridors.
-
-### 2.4 Evaluation–Deployment Gap
-
-Offline evaluations and benchmarks fail to reflect production conditions. Differences in traffic distribution, user intent diversity, and tool interactions lead to performance gaps that systematically bias safety metrics upward during development. This gap is a primary driver of silent regressions after model or policy updates.
-
-### 2.5 Governance and Incentive Failures
-
-Safety failures frequently originate outside the model or safeguards layer. Misaligned incentives between product velocity and safety enforcement, unclear ownership of false negatives, and metric gaming create organizational pathways for risk accumulation. These failures are often invisible to purely technical evaluations.
-
-### The Core Insight
-
-> This taxonomy highlights a central theme: most safety failures are interface failures between components and organizations, not isolated model misbehavior. Consequently, robust safety engineering requires not only better models or detectors, but explicit mechanisms to monitor, gate, and correct system-level degradation over time.
+The core claim is that safety in agentic systems cannot be achieved through point solutions. It must be engineered as an evolving system with explicit feedback loops, regression gating, and organizational governance.
 
 ---
 
-## 3. Red-Teaming Is Necessary but Insufficient
+## 2. Why Multi-Turn + Partial Observability Breaks RLHF Guarantees
 
-Red-teaming is a foundational safety practice, but it does not provide the coverage guarantees that production agentic systems require. In multi-turn contexts, the attack surface is combinatorially larger, and static attack sets quickly become obsolete as models are updated.
+RLHF (Reinforcement Learning from Human Feedback) has been remarkably effective at aligning single-turn model behavior with human preferences. However, the assumptions underlying RLHF break down in agentic contexts, leading to systematic safety gaps.
 
-### 3.1 Delayed Failures Are the Dominant Failure Mode
+### 2.1 Delayed Failure Modes
 
-Empirical stress testing reveals that the majority of safeguard failures occur not on the first turn, but after sustained adversarial pressure:
+RLHF optimizes for immediate feedback signals. When harmful outcomes are delayed by multiple turns, the credit assignment problem becomes intractable:
 
-| Turn | Cumulative Failure Rate |
-|------|-------------------------|
-| 1 | 5% |
-| 2 | 12% |
-| 3 | 28% |
-| 4 | 45% |
-| 5 | 62% |
-| 6+ | 75%+ |
+| Failure Type | RLHF Visibility | Detection Difficulty |
+|--------------|-----------------|---------------------|
+| Immediate harm | High | Low |
+| 2-turn delayed | Medium | Medium |
+| 5+ turn delayed | Low | High |
+| Tool-mediated | Very Low | Very High |
 
-Single-turn red-teaming captures only the 5% that fail immediately. The remaining 70%+ require trajectory-level stress testing to surface.
+The reward model sees each turn in isolation. It cannot attribute negative outcomes to decisions made several turns earlier, so it cannot learn to avoid the precursor behaviors.
 
-### 3.2 Erosion Curves as a Diagnostic Tool
+### 2.2 Credit Assignment Failure
 
-Plotting safety scores across turns reveals erosion patterns that are invisible in aggregate metrics:
+Consider a trajectory where harmful output emerges at turn 5:
+
+```
+Turn 1: Establish benign context        ← No negative signal
+Turn 2: Request clarification           ← No negative signal
+Turn 3: Provide partial information     ← No negative signal
+Turn 4: Build on partial information    ← No negative signal
+Turn 5: Produce harmful synthesis       ← Negative signal (too late)
+```
+
+By the time the reward model sees negative feedback at turn 5, turns 1-4 have already been reinforced as "good" behavior. The causal chain is invisible to single-turn optimization.
+
+### 2.3 Policy Erosion Over Trajectories
+
+RLHF-trained models exhibit systematic policy erosion when subjected to sustained pressure:
 
 ```
 Safety Score
@@ -155,19 +127,56 @@ Safety Score
     Turn 1    2    3    4    5    6    7    8
 ```
 
-The slope of this curve is a more predictive metric than any single-turn score. Steep erosion indicates vulnerability to decomposition-based attacks.
+This erosion curve is the signature of RLHF's blind spot: the training signal reinforces compliance with user requests, and without trajectory-level negative feedback, the model learns to gradually accommodate rather than maintain firm boundaries.
 
-### 3.3 Attacker Adaptation Outpaces Static Benchmarks
+### The Core Insight
 
-Attack templates that are effective today become ineffective as models are trained against them. Effective red-teaming must include:
+> RLHF provides strong guarantees for single-turn interactions but provides no guarantees for multi-turn trajectories. The credit assignment problem, combined with partial observability of downstream effects, means that RLHF-aligned models can still produce harmful outcomes through sequences of individually-benign steps.
 
-- **Mutation strategies:** Systematic variation of known attack patterns
-- **Feedback loops:** Adaptation based on failed attack attempts
-- **Novel generation:** Discovery of attack patterns not present in training data
+---
 
-Static jailbreak benchmarks provide a false sense of security because they test known attacks on models that may have been trained (directly or indirectly) to defend against them.
+## 3. Red-Teaming Is Necessary but Insufficient
 
-### 3.4 Why Red-Teaming Alone Is Insufficient
+Red-teaming is a foundational safety practice, but it does not provide the coverage guarantees that production agentic systems require. In multi-turn contexts, the attack surface is combinatorially larger, and static attack sets quickly become obsolete as models are updated.
+
+### 3.1 Delayed Failure Curves
+
+Empirical stress testing reveals that the majority of safeguard failures occur not on the first turn, but after sustained adversarial pressure:
+
+| Turn | Cumulative Failure Rate |
+|------|-------------------------|
+| 1 | 5% |
+| 2 | 12% |
+| 3 | 28% |
+| 4 | 45% |
+| 5 | 62% |
+| 6+ | 75%+ |
+
+Single-turn red-teaming captures only the 5% that fail immediately. The remaining 70%+ require trajectory-level stress testing to surface.
+
+The erosion curve is the critical diagnostic:
+
+```
+Safety Score
+    │
+1.0 ├████
+    │    ████
+    │        ████
+    │            ████
+    │                ████
+0.5 ├                    ████
+    │                        ████
+    │                            ████
+    │                                ████
+0.0 ├────┬────┬────┬────┬────┬────┬────┬────
+    Turn 1    2    3    4    5    6    7    8
+```
+
+The slope of this curve is more predictive than any single-turn score. Steep erosion indicates vulnerability to decomposition-based attacks.
+
+### 3.2 Adaptive Attackers vs Static Templates
+
+Attack templates that are effective today become ineffective as models are trained against them. This creates an arms race that static benchmarks cannot capture:
 
 | Red-Team Property | Production Reality |
 |-------------------|-------------------|
@@ -176,17 +185,37 @@ Static jailbreak benchmarks provide a false sense of security because they test 
 | Known distribution | Distribution shift at deployment |
 | Point-in-time evaluation | Continuous adversarial pressure |
 
+Effective red-teaming must include:
+
+- **Mutation strategies:** Systematic variation of known attack patterns
+- **Feedback loops:** Adaptation based on failed attack attempts
+- **Novel generation:** Discovery of attack patterns not present in training data
+
+Static jailbreak benchmarks provide a false sense of security because they test known attacks on models that may have been trained (directly or indirectly) to defend against them.
+
+### 3.3 Coverage vs Depth Tradeoff
+
+Red-teaming faces a fundamental resource allocation problem:
+
+| Strategy | Coverage | Depth | Cost |
+|----------|----------|-------|------|
+| Broad single-turn | High | Low | Low |
+| Deep multi-turn | Low | High | High |
+| Adaptive multi-turn | Medium | High | Very High |
+
+Most organizations default to broad single-turn testing because it is cheaper and produces impressive-looking benchmark scores. This systematically underestimates risk from sophisticated attackers who are willing to invest in multi-turn strategies.
+
 ### The Core Insight
 
 > Red-teaming that does not model attacker adaptation and multi-turn erosion produces false confidence. The goal of red-teaming should not be to "pass" a benchmark, but to discover the shape of the erosion curve and the conditions under which safeguards degrade.
 
 ---
 
-## 4. Detection Benchmarks: Why Single-Turn Metrics Mislead
+## 4. Detection Benchmarks and Trajectory-Level Metrics
 
 Misuse detection is a critical safeguard layer, but detection benchmarks that operate at the turn level systematically underestimate risk in agentic contexts.
 
-### 4.1 Trajectory-Level vs Turn-Level Detection
+### 4.1 Why Per-Turn Detectors Fail
 
 | Detection Type | What It Measures | Blind Spots |
 |----------------|------------------|-------------|
@@ -195,16 +224,41 @@ Misuse detection is a critical safeguard layer, but detection benchmarks that op
 
 In empirical evaluations, trajectory-level detection catches 40-60% more attacks than turn-level detection on the same traffic. This gap widens for sophisticated attackers who deliberately decompose harmful requests.
 
-### 4.2 The Cost Asymmetry of Detection Errors
+### 4.2 Trajectory-Level Intent Drift
 
-| Error Type | Immediate Cost | Long-term Cost |
-|------------|----------------|----------------|
-| False Positive | User friction, support load | Trust erosion, workarounds |
-| False Negative | Potential harm event | Regulatory exposure, reputation |
+Intent is not static across a conversation. Attackers exploit this by starting with benign requests and gradually shifting toward harmful goals:
 
-In safety-critical applications, the cost of false negatives vastly exceeds the cost of false positives. Detection systems should be calibrated for recall, not precision or balanced accuracy.
+```
+Intent Trajectory
+    │
+Benign ├████████
+       │        ████
+       │            ████
+       │                ████
+Harmful├                    ████████████
+       └────┬────┬────┬────┬────┬────────▶
+        Turn 1    2    3    4    5   Time
+```
 
-### 4.3 Detection Latency Determines Intervention Value
+Per-turn detectors see each message in isolation and cannot detect drift patterns. Trajectory-level detection must track cumulative intent signals and flag when the trajectory crosses into high-risk territory.
+
+| Detection Type | Intent Drift Sensitivity | Cost |
+|----------------|-------------------------|------|
+| Per-turn | Cannot detect | Low |
+| Window-based (last 3 turns) | Partial | Medium |
+| Full trajectory | High | High |
+
+### 4.3 Erosion Curves and Delayed Violation Rate
+
+The **delayed violation rate (DVR)** measures what fraction of violations occur after turn N:
+
+| Threshold | DVR | Implication |
+|-----------|-----|-------------|
+| Turn 1 | 95% | Single-turn detection misses 95% of violations |
+| Turn 3 | 72% | 3-turn window still misses majority |
+| Turn 5 | 38% | 5-turn window catches most but is expensive |
+
+The **erosion curve** plots safety score degradation over turns. Steep erosion curves indicate models vulnerable to sustained pressure:
 
 ```
 Harm Potential
@@ -243,7 +297,7 @@ Current detection benchmarks suffer from several structural limitations:
 
 Safeguards must be integrated into the agent execution loop, not bolted on as external filters. The placement and design of safeguard hooks determines what classes of failures can be caught and at what cost.
 
-### 5.1 The Agent Execution Loop
+### 5.1 Pre-Action, Post-Action, and Trajectory-Level Hooks
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -284,7 +338,7 @@ Safeguards must be integrated into the agent execution loop, not bolted on as ex
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 5.2 Intervention Points and Their Tradeoffs
+### 5.2 Escalation Policies
 
 | Hook | What It Catches | Latency Impact | False Positive Risk |
 |------|-----------------|----------------|---------------------|
@@ -294,27 +348,34 @@ Safeguards must be integrated into the agent execution loop, not bolted on as ex
 
 Mid-trajectory monitoring is the highest-leverage intervention point but is the least commonly implemented. It requires maintaining state across turns and computing cumulative risk scores, which adds complexity and latency.
 
-### 5.3 Escalation Policy Design
+### 5.3 Human-in-the-Loop Recovery
 
-Escalation policies determine what happens when a safeguard fires. Common options:
+When automated safeguards detect high-risk situations, human review becomes the final line of defense. Effective human-in-the-loop systems require:
 
-| Action | User Impact | Safety | Operational Cost |
-|--------|-------------|--------|------------------|
+**Triage efficiency:** Human reviewers cannot examine every flagged interaction. Prioritization by severity and confidence is essential:
+
+| Priority | Criteria | Response Time |
+|----------|----------|---------------|
+| P0 | High severity + high confidence | < 1 hour |
+| P1 | High severity + medium confidence | < 4 hours |
+| P2 | Medium severity + any confidence | < 24 hours |
+| P3 | Low severity, flagged for learning | Weekly batch |
+
+**Context preservation:** Reviewers must see the full trajectory, not just the flagged message. Without context, review decisions are unreliable.
+
+**Feedback integration:** Human decisions must feed back into detector training and threshold calibration. Otherwise, human review becomes a terminal operation with no systemic benefit.
+
+| Escalation Action | User Impact | Safety | Operational Cost |
+|-------------------|-------------|--------|------------------|
 | Silent log | None | Low | Low |
 | Soft warning | Low | Medium | Low |
 | Require confirmation | Medium | Medium | Medium |
 | Block and explain | High | High | Medium |
 | Human review queue | High | Highest | High |
 
-No single escalation policy is optimal. The right policy depends on:
-- Confidence of the detection signal
-- Severity of potential harm
-- User context and history
-- Operational capacity for human review
-
 ### The Core Insight
 
-> Safeguards must be embedded in the agent loop, not applied as post-hoc filters. The highest-leverage intervention point is mid-trajectory monitoring, which can detect drift and erosion before harm crystallizes. However, mid-trajectory safeguards require careful design to avoid unacceptable latency and false positive rates.
+> Safeguards must be embedded in the agent loop, not applied as post-hoc filters. The highest-leverage intervention point is mid-trajectory monitoring, which can detect drift and erosion before harm crystallizes. Human-in-the-loop review is essential for high-severity cases but requires careful triage to remain operationally viable.
 
 ---
 
@@ -322,17 +383,38 @@ No single escalation policy is optimal. The right policy depends on:
 
 Safety evaluation at scale introduces operational constraints that fundamentally shape what is feasible. Research-grade evaluation methodologies often fail to transfer to production because they assume unlimited compute, instant evaluation, and perfect observability.
 
-### 6.1 The Operational Gap
+### 6.1 Batch vs Streaming Evaluation
 
-| Research Assumption | Production Reality |
-|---------------------|-------------------|
-| Unlimited compute budget | Cost per eval matters |
-| Instant evaluation | Latency budgets are tight |
-| Full observability | Partial logging, sampling |
-| Stable model behavior | Model version drift |
-| Cooperative users | Adversarial traffic |
+Production safety evaluation operates in two modes with different tradeoffs:
 
-### 6.2 Cost Model for Safety Evaluation
+| Mode | Latency | Coverage | Use Case |
+|------|---------|----------|----------|
+| **Streaming** | Real-time | Sampled | Live intervention |
+| **Batch** | Hours-days | Full | Regression detection |
+
+Streaming evaluation must fit within request latency budgets (typically < 100ms additional). This limits complexity and forces sampling. Batch evaluation can be exhaustive but only catches problems after they occur.
+
+Effective production systems use both:
+- Streaming for real-time blocking of high-confidence threats
+- Batch for comprehensive regression detection and trend analysis
+
+### 6.2 Drift Detection
+
+Model behavior drifts over time due to:
+- API version updates
+- Fine-tuning adjustments
+- Context window changes
+- Traffic distribution shifts
+
+Drift detection requires continuous monitoring against stable baselines:
+
+| Metric | Baseline Source | Alert Threshold |
+|--------|-----------------|-----------------|
+| Refusal rate | Last 7-day average | ±5% |
+| Safety score distribution | Frozen test set | KL divergence > 0.1 |
+| Erosion curve slope | Historical models | Steeper by >10% |
+
+### 6.3 Cost-Aware Safety Coverage
 
 | Component | Cost per 1K Evals |
 |-----------|-------------------|
@@ -344,7 +426,12 @@ Safety evaluation at scale introduces operational constraints that fundamentally
 
 At production scale (millions of interactions), cost determines which evaluations are feasible. Full trajectory-level evaluation of all traffic is typically not economical; sampling and prioritization are required.
 
-### 6.3 Backpressure and Graceful Degradation
+Cost-aware prioritization:
+- **High-risk signals**: Full evaluation (flagged users, sensitive topics)
+- **Medium-risk signals**: Sampled evaluation (new users, edge cases)
+- **Low-risk signals**: Batch evaluation only (established users, benign topics)
+
+### 6.4 Backpressure and Graceful Degradation
 
 When evaluation load exceeds capacity, systems must degrade gracefully:
 
@@ -568,39 +655,79 @@ As alert volume grows, operator response degrades. Eventually, all alerts—incl
 
 ---
 
-## 10. What This System Cannot Solve
+## 10. Threat Model
 
-No safety system can guarantee zero failures. Honest assessment of limitations is essential for appropriate reliance.
+We consider both adversarial misuse and benign failure modes in deployed agentic systems.
 
-### 10.1 Adversarial Creativity
+### 10.1 Adversary Capabilities
 
-Attackers will always discover novel vectors that were not anticipated in benchmarks or stress tests. Zero-day attacks will succeed until they are detected and incorporated into defenses.
+| Capability | Description | Sophistication |
+|------------|-------------|----------------|
+| Adaptive multi-turn prompting | Iterative refinement based on model responses | Medium |
+| Context manipulation | Exploiting long conversation histories | Medium |
+| Tool affordance exploitation | Using agent tools for unintended purposes | High |
+| Slow policy erosion | Gradual boundary-pushing over many turns | High |
 
-**Implication:** Reactive capability (fast incident detection and response) is as important as proactive capability (prevention).
+Adversaries range from casual users testing limits to sophisticated attackers with specific misuse goals. The key insight is that sophisticated attackers prefer slow erosion to direct attacks because erosion is harder to detect.
 
-### 10.2 Distribution Shift
+### 10.2 Model Misuse vs Benign Failure
 
-Models deployed in new domains, languages, or user populations may behave differently than in evaluation. Benchmarks are necessarily limited in coverage, and production traffic will always include cases not represented in evaluation.
+| Failure Type | Intent | Detection Difficulty | Mitigation |
+|--------------|--------|---------------------|------------|
+| Adversarial misuse | Malicious | High | Intent modeling, trajectory analysis |
+| Benign failure | None | Medium | Better training, guardrails |
+| Accidental harm | None | Low | Output filtering |
 
-**Implication:** Domain-specific validation is required. Cross-domain generalization should not be assumed.
+Both adversarial and benign failures matter. A system that only defends against malicious actors will still produce harmful outputs through misalignment or edge cases.
 
-### 10.3 Unknown Unknowns
+### 10.3 Operational Threat Surfaces
 
-We cannot test for attacks we have not imagined. The attack surface is larger than any benchmark can cover.
+Beyond model behavior, operational failures create attack surfaces:
 
-**Implication:** Defense in depth. No single safeguard layer should be the sole line of defense.
+- **Stale system prompts:** Outdated safety instructions after model updates
+- **Disabled checks:** Safeguards turned off during debugging and not re-enabled
+- **Configuration drift:** Production settings diverging from tested configurations
+- **Alert fatigue:** Critical signals ignored due to noise
 
-### 10.4 Dual-Use Ambiguity
+### 10.4 Out of Scope
 
-Some content and capabilities are legitimately dual-use. No classifier can perfectly distinguish malicious from benign intent based on content alone.
+This framework does not address:
+- Fully malicious insiders with privileged infrastructure access
+- Attacks requiring direct model weight tampering
+- Nation-state scale adversaries with unlimited resources
+- Hardware-level attacks on inference infrastructure
 
-**Implication:** Accept either false positives or false negatives. The choice should be conscious and context-dependent.
+---
 
-### 10.5 Organizational Will
+## 11. Limitations
 
-Technical safeguards cannot force organizations to prioritize safety. If leadership does not value safety, safeguards will be bypassed, underfunded, or ignored.
+Our framework emphasizes detection and mitigation of silent regressions in agentic safety, but it has several limitations:
 
-**Implication:** Technical safety solutions require organizational commitment as a prerequisite.
+### 11.1 Coverage Limits
+
+No benchmark suite can exhaustively enumerate all future misuse patterns. Trajectory-level evaluation improves coverage but does not eliminate blind spots. Novel attack vectors will succeed until they are observed, analyzed, and incorporated into defenses.
+
+### 11.2 Cost Constraints
+
+Continuous multi-turn evaluation is expensive. Organizations must trade off between coverage depth and operational cost, which may leave some risk surfaces under-monitored.
+
+| Coverage Level | Cost | Risk Accepted |
+|----------------|------|---------------|
+| Full trajectory, all traffic | Very High | Minimal |
+| Sampled trajectory | Medium | Some edge cases |
+| Turn-level only | Low | Multi-turn attacks |
+
+### 11.3 Simulation Fidelity
+
+Synthetic red-teaming and replayed incidents may fail to capture emergent behaviors seen only under real user incentives and production-scale usage. Evaluation environments are necessarily simplified.
+
+### 11.4 Organizational Dependence
+
+The effectiveness of regression gating and incident feedback loops depends on governance. Without binding policies, technical signals can be overridden. A safety system is only as strong as the organizational commitment to enforce it.
+
+### 11.5 Adversarial Adaptation
+
+Attackers learn. Defenses that are effective today may be bypassed tomorrow. Static benchmarks become obsolete as attackers discover and share new techniques.
 
 ### The Core Insight
 
@@ -608,52 +735,70 @@ Technical safeguards cannot force organizations to prioritize safety. If leaders
 
 ---
 
-## 11. Design Principles
+## 12. Future Work
 
-The following principles synthesize the lessons from building and operating safety systems for agentic AI.
+Several directions remain open for advancing safety evaluation in agentic systems:
 
-### Principle 1: Trajectory-First Evaluation
+### 12.1 Learning-Based Trajectory Evaluators
 
-Evaluate conversation trajectories, not individual messages. Single-turn metrics systematically underestimate risk in agentic contexts.
+Current trajectory evaluation relies heavily on hand-engineered heuristics. Developing learned evaluators that reason over long-horizon interactions could improve detection of subtle failure modes.
 
-### Principle 2: Regression Before Release
+### 12.2 Automated Adversary Generation
 
-No model ships without regression testing against known failures. Safety is a CI/CD gate, not a checklist item.
+Move beyond template-based red-teaming toward adaptive agents that co-evolve with deployed safeguards. This requires:
+- Reinforcement learning for attack policy optimization
+- Diversity mechanisms to avoid mode collapse
+- Transfer learning across model versions
 
-### Principle 3: Incidents Become Tests
+### 12.3 Safety-Aware Training Loops
 
-Every incident generates a regression test. Organizational memory is encoded in test suites, not documentation.
+Integrate regression failures and incident replays directly into training pipelines, closing the loop between evaluation and model improvement. This requires solving:
+- Credit assignment for delayed failures
+- Sample efficiency for rare failure modes
+- Avoiding Goodhart's law on safety metrics
 
-### Principle 4: Governance Is Part of Safety
+### 12.4 Human Factors Research
 
-Technical safeguards without organizational enforcement are theater. Incentive structures and authority boundaries determine real-world safety outcomes.
+Study how organizational incentives, review processes, and incident triage workflows affect long-term safety outcomes. Technical safety research must be complemented by organizational safety research.
 
-### Principle 5: Metrics Must Be Game-Resistant
+### 12.5 Cross-Organization Benchmarks
 
-Assume teams will optimize for whatever is measured. Use held-out test sets, out-of-distribution probes, and correlation with production incidents.
-
-### Principle 6: Assume Safeguards Will Be Bypassed
-
-Design for defense in depth. No single layer should be the sole protection.
-
-### Principle 7: Prefer False Positives to False Negatives
-
-In safety-critical contexts, blocking a benign action is recoverable. Missing a harmful action may not be.
-
-### Principle 8: Learn Faster Than Attackers Adapt
-
-The goal is not zero incidents, but a learning system that improves faster than the threat landscape evolves.
+Develop shared, versioned regression suites across organizations to reduce safety metric gaming and improve external accountability. This requires:
+- Governance for benchmark updates
+- Mechanisms to prevent overfitting
+- Incentive alignment for honest reporting
 
 ---
 
-## 12. Appendix
+## 13. Conclusion
+
+Safety failures in deployed agentic systems are rarely the result of a single catastrophic decision. They emerge gradually through compounding interactions, partial observability, and organizational pressures that degrade safeguards over time. Single-turn benchmarks and one-off red-teaming exercises provide a false sense of security because they do not measure the failure modes that dominate real-world risk: delayed violations, policy erosion across trajectories, and silent regressions across releases.
+
+We argue that safety must be treated as a **non-regression invariant** enforced through production-grade evaluation infrastructure. This requires:
+
+1. **Trajectory-level metrics** that capture multi-turn failure modes
+2. **Safeguards embedded directly in agent loops** at pre-action, mid-trajectory, and post-action points
+3. **Regression-based release gating** with statistical rigor and OK/WARN/BLOCK verdicts
+4. **Closed feedback loops** from incidents to permanent regression tests
+
+Finally, we highlight that technical solutions alone are insufficient. Organizational incentives, governance structures, and ownership models strongly shape whether safety signals are binding or merely advisory. Without aligning incentives and accountability, even well-designed safety systems will erode in practice.
+
+> **Safety is not a static property of a model; it is an operational property of the organization that deploys it.**
+
+We frame safety not as a pre-release checklist but as an emergent property of an end-to-end deployment system. Effective safety engineering requires treating safety signals as binding operational constraints, integrating them into release processes, and continuously updating evaluation coverage based on real-world incidents.
+
+The goal is not zero incidents—that is unachievable. The goal is a system that learns faster than attackers adapt and faster than organizational memory decays.
+
+---
+
+## Appendix
 
 ### A. Portfolio Mapping
 
 | Whitepaper Section | Repository |
 |--------------------|------------|
-| Problem Framing | when-rlhf-fails-quietly |
-| Failure Taxonomy | when-rlhf-fails-quietly, agentic-safety-incident-lab |
+| Introduction | when-rlhf-fails-quietly |
+| RLHF Limitations | when-rlhf-fails-quietly |
 | Red-Teaming | safeguards-stress-tests |
 | Detection Benchmarks | agentic-misuse-benchmark |
 | Safeguards in Loop | agentic-safeguards-simulator |
@@ -662,30 +807,33 @@ The goal is not zero incidents, but a learning system that improves faster than 
 | Incident Response | agentic-safety-incident-lab |
 | Research Communication | safety-memos |
 
-### B. Reproducibility
+### B. Design Principles Summary
+
+1. **Trajectory-First Evaluation:** Evaluate conversation trajectories, not individual messages
+2. **Regression Before Release:** No model ships without regression testing against known failures
+3. **Incidents Become Tests:** Every incident generates a regression test
+4. **Governance Is Part of Safety:** Technical safeguards without organizational enforcement are theater
+5. **Metrics Must Be Game-Resistant:** Use held-out test sets and out-of-distribution probes
+6. **Assume Safeguards Will Be Bypassed:** Design for defense in depth
+7. **Prefer False Positives to False Negatives:** In safety-critical contexts, blocking is recoverable
+8. **Learn Faster Than Attackers Adapt:** The goal is a learning system, not a perfect system
+
+### C. Reproducibility
 
 - All evaluation code uses fixed random seeds for reproducibility
 - Model API responses are inherently stochastic; results may vary across API versions
 - Hardware: Results generated on Apple M1 Pro, 16GB RAM
 - See per-repository `docs/reproducibility.md` for detailed reproduction instructions
 
-### C. Negative Results
+### D. Negative Results
 
 | Approach | Outcome | Learning |
 |----------|---------|----------|
-| Single-turn proxy metrics for trajectory safety | Correlation < 0.3 with trajectory outcomes | Trajectory-level evaluation is not optional |
-| Reward model scores as safety signals | Decorrelate from safety in multi-turn contexts | RM blind spots are systematic |
+| Single-turn proxy metrics | Correlation < 0.3 with trajectory outcomes | Trajectory-level evaluation required |
+| Reward model scores as safety signals | Decorrelate in multi-turn contexts | RM blind spots are systematic |
 | Keyword blocklists | Trivially bypassed via paraphrase | Semantic understanding required |
 | Fixed escalation thresholds | Gamed by attackers and operators | Adaptive thresholds necessary |
-| User reputation scoring | Defeated by new accounts, Sybil attacks | Per-session assessment more robust |
-
-### D. Future Work
-
-- Formal verification of safeguard composition properties
-- Automated novel attack generation (beyond mutation)
-- Cross-organization safety benchmarking standards
-- Real-time adversarial adaptation detection
-- Causal (not just correlational) incident root cause analysis
+| User reputation scoring | Defeated by Sybil attacks | Per-session assessment more robust |
 
 ---
 

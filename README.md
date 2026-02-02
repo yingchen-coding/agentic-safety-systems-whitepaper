@@ -1,30 +1,33 @@
 > **Portfolio**: [Safety Memo](https://yingchen-coding.github.io/safety-memos/) · [when-rlhf-fails-quietly](https://github.com/yingchen-coding/when-rlhf-fails-quietly) · [agentic-misuse-benchmark](https://github.com/yingchen-coding/agentic-misuse-benchmark) · [agentic-safeguards-simulator](https://github.com/yingchen-coding/agentic-safeguards-simulator) · [safeguards-stress-tests](https://github.com/yingchen-coding/safeguards-stress-tests) · [scalable-safeguards-eval-pipeline](https://github.com/yingchen-coding/scalable-safeguards-eval-pipeline) · [model-safety-regression-suite](https://github.com/yingchen-coding/model-safety-regression-suite) · [agentic-safety-incident-lab](https://github.com/yingchen-coding/agentic-safety-incident-lab)
 
-# Engineering Agentic Safeguards as a System
+# Silent Failures in Agentic Systems
 
-> Why Safety Fails in Practice and How to Close the Loop
+> Why Single-Turn Safety Evaluations Systematically Underestimate Risk
 
 ## Abstract
 
-This whitepaper synthesizes learnings from building 8 interconnected safety evaluation and safeguards systems. It argues that **AI safety failures are primarily organizational and systemic, not purely technical**. We document failure taxonomies, red-teaming limitations, detection blind spots, production constraints, release gating requirements, incident-driven learning, and governance anti-patterns—proposing a closed-loop defense architecture that addresses all of these.
+Despite widespread deployment of large language models, safety evaluation practices remain dominated by single-turn benchmarks and static red-teaming. We argue that these methods systematically underestimate risk in agentic systems, where failures emerge over multi-turn interactions under partial observability. Through empirical evidence and system-level analysis, we show that alignment mechanisms trained on single-step feedback fail to constrain delayed, compounding failure modes such as policy erosion, intent drift, and tool misuse.
+
+We propose a lifecycle-oriented safety framework that integrates trajectory-level evaluation, safeguards embedded in agent loops, regression-based release gating, and incident-driven feedback loops. This reframes safety from a pre-release checklist into a continuous, production-grade engineering discipline.
 
 ---
 
 ## Contents
 
-0. [Executive Summary](whitepaper.md#executive-summary)
-1. [Problem Framing: Why Agentic Safety Fails Systematically](whitepaper.md#1-problem-framing-why-agentic-safety-fails-systematically)
-2. [Failure Taxonomy: How Safeguards Break in Practice](whitepaper.md#2-failure-taxonomy-how-safeguards-break-in-practice)
+0. [Abstract](whitepaper.md#abstract)
+1. [Introduction: The Illusion of Safety in Single-Turn Benchmarks](whitepaper.md#1-introduction-the-illusion-of-safety-in-single-turn-benchmarks)
+2. [Why Multi-Turn + Partial Observability Breaks RLHF Guarantees](whitepaper.md#2-why-multi-turn--partial-observability-breaks-rlhf-guarantees)
 3. [Red-Teaming Is Necessary but Insufficient](whitepaper.md#3-red-teaming-is-necessary-but-insufficient)
-4. [Detection Benchmarks: Why Single-Turn Metrics Mislead](whitepaper.md#4-detection-benchmarks-why-single-turn-metrics-mislead)
+4. [Detection Benchmarks and Trajectory-Level Metrics](whitepaper.md#4-detection-benchmarks-and-trajectory-level-metrics)
 5. [Safeguards in the Loop: Where to Intervene](whitepaper.md#5-safeguards-in-the-loop-where-to-intervene-in-agent-architectures)
-6. [Production Reality: Eval Infra and Cost Constraints](whitepaper.md#6-production-reality-evaluation-infra-and-cost-constraints)
-7. [Release Gating: Why Regressions Are Inevitable Without CI/CD](whitepaper.md#7-release-gating-why-safety-regressions-are-inevitable-without-cicd)
+6. [Production Reality: Eval Infra and Cost Constraints](whitepaper.md#6-production-reality-evaluation-infrastructure-and-cost-constraints)
+7. [Release Gating via Safety Regression Testing](whitepaper.md#7-release-gating-why-safety-regressions-are-inevitable-without-cicd)
 8. [Incident → Regression: Closing the Feedback Loop](whitepaper.md#8-incident--regression-closing-the-feedback-loop)
-9. [Organizational Failure Modes & Incentives](whitepaper.md#9-organizational-failure-modes--incentives)
-10. [What This System Still Cannot Solve](whitepaper.md#10-what-this-system-still-cannot-solve)
-11. [Design Principles](whitepaper.md#11-design-principles)
-12. [Appendix](whitepaper.md#12-appendix)
+9. [Organizational Failure Modes & Incentives](whitepaper.md#9-organizational-failure-modes-and-incentives)
+10. [Threat Model](whitepaper.md#10-threat-model)
+11. [Limitations](whitepaper.md#11-limitations)
+12. [Future Work](whitepaper.md#12-future-work)
+13. [Conclusion](whitepaper.md#13-conclusion)
 
 ---
 
