@@ -31,11 +31,11 @@ These are not primarily model problems—they are systems problems. My work addr
 |-----------|---------|--------|
 | when-rlhf-fails-quietly | Document RLHF failure modes in multi-turn contexts | Complete |
 | agentic-misuse-benchmark | Trajectory-level detection benchmarks | Complete |
-| agentic-safeguards-simulator | Safeguard placement and escalation analysis | Complete |
-| safeguards-stress-tests | Adaptive red-teaming with erosion curves | Complete |
-| scalable-safeguards-eval-pipeline | Production-grade evaluation infrastructure | Complete |
-| model-safety-regression-suite | CI/CD safety regression gating | Complete |
-| agentic-safety-incident-lab | Incident-to-regression feedback loops | Complete |
+| safety-harness/simulator | Safeguard placement and escalation analysis | Complete |
+| safety-harness/stress-testing | Adaptive red-teaming with erosion curves | Complete |
+| safety-harness/release-gate | Production-grade evaluation infrastructure | Complete |
+| safety-harness/regression-suite | CI/CD safety regression gating | Complete |
+| safety-harness/incident-lab | Incident-to-regression feedback loops | Complete |
 | safety-memos | Research communication templates | Complete |
 | Whitepaper | System-level synthesis | Complete |
 

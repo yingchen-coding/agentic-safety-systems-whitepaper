@@ -799,12 +799,12 @@ The goal is not zero incidents—that is unachievable. The goal is a system that
 |--------------------|------------|
 | Introduction | when-rlhf-fails-quietly |
 | RLHF Limitations | when-rlhf-fails-quietly |
-| Red-Teaming | safeguards-stress-tests |
+| Red-Teaming | safety-harness/stress-testing |
 | Detection Benchmarks | agentic-misuse-benchmark |
-| Safeguards in Loop | agentic-safeguards-simulator |
-| Production Infrastructure | scalable-safeguards-eval-pipeline |
-| Release Gating | model-safety-regression-suite |
-| Incident Response | agentic-safety-incident-lab |
+| Safeguards in Loop | safety-harness/simulator |
+| Production Infrastructure | safety-harness/release-gate |
+| Release Gating | safety-harness/regression-suite |
+| Incident Response | safety-harness/incident-lab |
 | Research Communication | safety-memos |
 
 ### B. Design Principles Summary

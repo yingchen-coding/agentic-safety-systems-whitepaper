@@ -54,7 +54,7 @@ Safety Score
 
 **Repos to reference:**
 - `agentic-misuse-benchmark` (trajectory-level detection)
-- `safeguards-stress-tests` (adaptive red-teaming)
+- `safety-harness/stress-testing` (adaptive red-teaming)
 
 **Evidence to cite:**
 
@@ -74,7 +74,7 @@ Safety Score
 
 **Key point:** Intervention placement matters.
 
-**Repo to reference:** `agentic-safeguards-simulator`
+**Repo to reference:** `safety-harness/simulator`
 
 **Visual:** Agent loop with hooks
 
@@ -94,7 +94,7 @@ User Input → [PRE-ACTION] → Planner → [MID-TRAJECTORY] → Executor → [P
 
 **Key point:** Safety must be a non-regression invariant.
 
-**Repo to reference:** `model-safety-regression-suite`
+**Repo to reference:** `safety-harness/regression-suite`
 
 **Evidence to cite:**
 
@@ -124,7 +124,7 @@ Baseline Model → Candidate Model → Statistical Comparison → OK / WARN / BL
 
 **Key point:** Incidents must become permanent regression tests.
 
-**Repo to reference:** `agentic-safety-incident-lab`
+**Repo to reference:** `safety-harness/incident-lab`
 
 **Evidence to cite:**
 

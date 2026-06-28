@@ -71,11 +71,11 @@ We propose a lifecycle-oriented safety framework that integrates trajectory-leve
 
 ## 5-Minute End-to-End Demo
 
-See the full closed-loop system in action with [agentic-safety-demo](https://github.com/yingchen-coding/agentic-safety-demo):
+See the full closed-loop system in action with [safety-harness/demo](https://github.com/yingchen-coding/safety-harness/tree/main/demo):
 
 ```bash
-git clone https://github.com/yingchen-coding/agentic-safety-demo
-cd agentic-safety-demo
+git clone https://github.com/yingchen-coding/safety-harness
+cd safety-harness/demo
 make demo
 ```
 
@@ -125,11 +125,11 @@ agentic-safety-systems-whitepaper/
 |------------|----------------|
 | [when-rlhf-fails-quietly](https://github.com/yingchen-coding/when-rlhf-fails-quietly) | Failure taxonomy |
 | [agentic-misuse-benchmark](https://github.com/yingchen-coding/agentic-misuse-benchmark) | Detection benchmarks |
-| [agentic-safeguards-simulator](https://github.com/yingchen-coding/agentic-safeguards-simulator) | Safeguard design |
-| [safeguards-stress-tests](https://github.com/yingchen-coding/safeguards-stress-tests) | Red-teaming |
-| [scalable-safeguards-eval-pipeline](https://github.com/yingchen-coding/scalable-safeguards-eval-pipeline) | Production eval infra |
-| [model-safety-regression-suite](https://github.com/yingchen-coding/model-safety-regression-suite) | Release gating |
-| [agentic-safety-incident-lab](https://github.com/yingchen-coding/agentic-safety-incident-lab) | Incident → regression |
+| [safety-harness/simulator](https://github.com/yingchen-coding/safety-harness/tree/main/simulator) | Safeguard design |
+| [safety-harness/stress-testing](https://github.com/yingchen-coding/safety-harness/tree/main/stress-testing) | Red-teaming |
+| [safety-harness/release-gate](https://github.com/yingchen-coding/safety-harness/tree/main/release-gate) | Production eval infra |
+| [safety-harness/regression-suite](https://github.com/yingchen-coding/safety-harness/tree/main/regression-suite) | Release gating |
+| [safety-harness/incident-lab](https://github.com/yingchen-coding/safety-harness/tree/main/incident-lab) | Incident → regression |
 | [safety-memos](https://yingchen-coding.github.io/safety-memos/) | Research communication |
 
 ---

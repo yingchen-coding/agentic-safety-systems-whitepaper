@@ -50,7 +50,7 @@ Defines *how detection fails over trajectories*.
 
 ## 3. Safeguard Design
 
-**Repo:** `agentic-safeguards-simulator`
+**Repo:** `safety-harness/simulator`
 
 **Method:**
 We instrument a minimal agent architecture with pre-action, post-action, and trajectory-level safeguard hooks, and evaluate intervention strategies (block, warn, escalate, human-in-the-loop).
@@ -67,7 +67,7 @@ Explores *where safeguards should live in the agent loop*.
 
 ## 4. Automated Red-Teaming
 
-**Repo:** `safeguards-stress-tests`
+**Repo:** `safety-harness/stress-testing`
 
 **Method:**
 We implement multi-turn adversarial templates and mutation strategies to simulate adaptive attackers and measure delayed failure rates.
@@ -84,7 +84,7 @@ Provides *stress inputs* that surface silent regressions.
 
 ## 5. Production Evaluation Infrastructure
 
-**Repo:** `scalable-safeguards-eval-pipeline`
+**Repo:** `safety-harness/release-gate`
 
 **Method:**
 We design a batch + streaming evaluation system with drift detection, traffic replay, and cost-aware scheduling. Safety metrics are monitored continuously in production-like environments.
@@ -101,7 +101,7 @@ Makes safety evaluation *operationally sustainable*.
 
 ## 6. Release Gating
 
-**Repo:** `model-safety-regression-suite`
+**Repo:** `safety-harness/regression-suite`
 
 **Method:**
 We compare baseline vs candidate models using multiple evaluation suites and enforce regression thresholds with statistical significance tests. Results produce binding OK / WARN / BLOCK verdicts.
@@ -118,7 +118,7 @@ Turns safety signals into *release-blocking constraints*.
 
 ## 7. Incident → Regression Feedback Loop
 
-**Repo:** `agentic-safety-incident-lab`
+**Repo:** `safety-harness/incident-lab`
 
 **Method:**
 We replay real incidents, attribute root causes, estimate blast radius, and auto-generate regression tests that integrate back into the regression suite.
@@ -165,13 +165,13 @@ Bridges internal engineering insights to the research community.
 │                 ▼                 ▼               ▼                          │
 │  ┌─────────────────────────────────────────────────────────────────┐        │
 │  │  [5] PRODUCTION EVALUATION                                       │        │
-│  │      scalable-safeguards-eval-pipeline                           │        │
+│  │      safety-harness/release-gate                           │        │
 │  └─────────────────────────────────┬───────────────────────────────┘        │
 │                                    │                                         │
 │                                    ▼                                         │
 │  ┌─────────────────────────────────────────────────────────────────┐        │
 │  │  [6] RELEASE GATING                                              │        │
-│  │      model-safety-regression-suite                               │        │
+│  │      safety-harness/regression-suite                               │        │
 │  │      OK / WARN / BLOCK                                           │        │
 │  └─────────────────────────────────┬───────────────────────────────┘        │
 │                                    │                                         │
@@ -182,7 +182,7 @@ Bridges internal engineering insights to the research community.
 │                         ▼                                                    │
 │  ┌─────────────────────────────────────────────────────────────────┐        │
 │  │  [7] INCIDENT RESPONSE                                           │        │
-│  │      agentic-safety-incident-lab                                 │        │
+│  │      safety-harness/incident-lab                                 │        │
 │  └─────────────────────────────────┬───────────────────────────────┘        │
 │                                    │                                         │
 │                    ┌───────────────┴───────────────┐                        │
