@@ -2,6 +2,8 @@
 
 # Silent Failures in Agentic Systems
 
+[![CI](https://github.com/yingchen-coding/agentic-safety-systems-whitepaper/actions/workflows/ci.yml/badge.svg)](https://github.com/yingchen-coding/agentic-safety-systems-whitepaper/actions/workflows/ci.yml)
+
 **Why Single-Turn Safety Evaluations Systematically Underestimate Risk**
 
 ---
