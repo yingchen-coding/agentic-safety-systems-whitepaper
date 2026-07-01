@@ -145,6 +145,15 @@ agentic-safety-systems-whitepaper/
 - [Interview Guide](docs/INTERVIEW_NARRATIVE.md) — 30-minute walkthrough
 - [GitHub Pages](https://yingchen-coding.github.io/agentic-safety-systems-whitepaper/) — Visual landing page
 
+## Local Review Gate
+
+```bash
+scripts/pr_review_check.sh
+```
+
+This runs internal-link checks, compile checks, secret scanning, and commit-history attribution
+checks. GitHub runs the same gate through the `PR Review Gate` workflow.
+
 ---
 
 ## License
