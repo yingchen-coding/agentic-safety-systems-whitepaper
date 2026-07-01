@@ -2,3 +2,5 @@
 *.pyc
 __pycache__/
 .claude/
+
+scripts/pr_review_check.sh
